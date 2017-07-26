@@ -3,14 +3,18 @@ var EasyMineIco = artifacts.require("./EasyMineIco.sol");
 var EasyMinePreIco = artifacts.require("./EasyMinePreIco.sol");
 var EasyMineToken = artifacts.require("./EasyMineToken.sol");
 
+var config = require("./config.json");
+
+console.log("Configuration:", config);
+
 /* Contracts owner address */
-var ownerAddress = "0x8A80acd856d0D9E4E37ba5f75Bf8C2d15d26aE1C";
+var ownerAddress = config.ownerAddress; //"0x8A80acd856d0D9E4E37ba5f75Bf8C2d15d26aE1C";
 
 /* Wallet to transfer ICO funds to */
-var walletAddress = "0x2A3362bDF864915C2eb996cEE868a841586F4aD4";
+var walletAddress = config.walletAddress; //"0x2A3362bDF864915C2eb996cEE868a841586F4aD4";
 
 /* Bounty wallet address */
-var bountyWalletAddress = "0xca5DA912c9638856C69eb3a00eBea073142B0315";
+var bountyWalletAddress = config.bountyWalletAddress; //"0xca5DA912c9638856C69eb3a00eBea073142B0315";
 
 module.exports = function(deployer) {
   deployer.deploy(EasyMineIco, walletAddress, {from: ownerAddress}).then(function() {
