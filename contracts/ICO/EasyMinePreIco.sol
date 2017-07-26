@@ -38,14 +38,14 @@ contract EasyMinePreIco {
 
   modifier atStage(Stages _stage) {
     if (stage != _stage) {
-      throw;
+      revert();
     }
     _;
   }
 
   modifier isOwner() {
     if (msg.sender != owner) {
-      throw;
+      revert();
     }
     _;
   }
@@ -61,14 +61,14 @@ contract EasyMinePreIco {
     atStage(Stages.Deployed)
   {
     if (_easyMineToken == 0 || _ico == 0) {
-      throw;
+      revert();
     }
     easyMineToken = EasyMineToken(_easyMineToken);
     easyMineIco = EasyMineIco(_ico);
 
     // Validate token balance
     if (easyMineToken.balanceOf(this) != PRE_ICO_TOKENS) {
-      throw;
+      revert();
     }
     stage = Stages.SetUp;
   }

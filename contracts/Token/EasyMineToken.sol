@@ -13,7 +13,7 @@ contract EasyMineToken is StandardToken {
                          address _easyMineWalletAddress,
                          address _bountyWalletAddress) {
     if (_icoAddress == 0 || _preIcoAddress == 0 || _easyMineWalletAddress == 0 || _bountyWalletAddress == 0) {
-      throw;
+      revert();
     }
 
     totalSupply = 33000000 * 10**18;                     // 33.000.000 EMT

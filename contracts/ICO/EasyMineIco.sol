@@ -71,28 +71,28 @@ contract EasyMineIco {
 
   modifier atStage(Stages _stage) {
     if (stage != _stage) {
-      throw;
+      revert();
     }
     _;
   }
 
   modifier isOwner() {
     if (msg.sender != owner) {
-      throw;
+      revert();
     }
     _;
   }
 
   modifier isPreIco() {
     if (msg.sender != preIcoAddress) {
-      throw;
+      revert();
     }
     _;
   }
 
   modifier isValidPayload() {
     if (msg.data.length != 4 && msg.data.length != 36) {
-      throw;
+      revert();
     }
     _;
   }
@@ -113,7 +113,7 @@ contract EasyMineIco {
   function EasyMineIco(address _wallet)
     public {
     if (_wallet == 0) {
-      throw;
+      revert();
     }
     owner = msg.sender;
     wallet = _wallet;
@@ -127,13 +127,13 @@ contract EasyMineIco {
     atStage(Stages.AuctionDeployed)
   {
     if (_easyMineToken == 0 || _preIcoAddress == 0) {
-      throw;
+      revert();
     }
     easyMineToken = EasyMineToken(_easyMineToken);
     preIcoAddress = _preIcoAddress;
     // Validate token balance
     if (easyMineToken.balanceOf(this) != MAX_TOKENS_SOLD) {
-      throw;
+      revert();
     }
     stage = Stages.AuctionSetUp;
   }
@@ -146,7 +146,7 @@ contract EasyMineIco {
   {
     // Start allowed minimum 3000 blocks from now
     if (block.number + 3000 >= _startBlock) {
-      throw;
+      revert();
     }
     startBlock = _startBlock;
     endBlock = startBlock + MAX_DURATION_BLOCKS;
@@ -163,16 +163,16 @@ contract EasyMineIco {
   {
     uint256 amount = msg.value;
     if (_receiver == 0 || amount == 0) {
-      throw;
+      revert();
     }
     if (!wallet.send(amount)) {
-      throw;
+      revert();
     }
     bids[_receiver] += amount;
     totalReceived += amount;
 
     if (totalReceived > PRE_ICO_BIDS_CEILING) {
-      throw;
+      revert();
     }
 
     updateEndBlock();
@@ -220,16 +220,16 @@ contract EasyMineIco {
       amount = maxBid;
 
       if (!receiver.send(msg.value - amount)) {
-        throw;
+        revert();
       }
     }
 
     if (amount <= 0) {
-      throw;
+      revert();
     }
 
     if (!wallet.send(amount)) {
-      throw;
+      revert();
     }
 
     bids[receiver] += amount;
@@ -270,7 +270,7 @@ contract EasyMineIco {
     }
 
     if (bids[receiver] == 0) {
-      throw;
+      revert();
     }
 
     uint256 tokenCount = bids[receiver] * 10**18 / finalPrice;

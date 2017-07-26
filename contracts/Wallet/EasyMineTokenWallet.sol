@@ -14,7 +14,7 @@ contract EasyMineTokenWallet {
 
   modifier isOwner() {
     if (msg.sender != owner) {
-      throw;
+      revert();
     }
     _;
   }
@@ -28,7 +28,7 @@ contract EasyMineTokenWallet {
     isOwner
   {
     if (_easyMineToken == 0) {
-      throw;
+      revert();
     }
     easyMineToken = Token(_easyMineToken);
     startTime = now;
