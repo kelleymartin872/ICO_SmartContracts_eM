@@ -91,7 +91,7 @@ contract EasyMineIco {
   }
 
   modifier isValidPayload() {
-    if (msg.data.length != 4 && msg.data.length != 36) {
+    if (msg.data.length != 0 && msg.data.length != 4 && msg.data.length != 36) {
       revert();
     }
     _;
@@ -118,6 +118,20 @@ contract EasyMineIco {
     owner = msg.sender;
     wallet = _wallet;
     stage = Stages.AuctionDeployed;
+  }
+
+  /* Fallback function */
+  function()
+    public
+    payable
+    timedTransitions {
+    if (stage == Stages.AuctionStarted) {
+      bid(msg.sender);
+    } else if (stage == Stages.TradingStarted) {
+      claimTokens(msg.sender);
+    } else {
+      revert();
+    }
   }
 
   /* Sets up the token and pre ICO addresses */

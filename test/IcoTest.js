@@ -147,7 +147,8 @@ contract('ICO', accounts => {
   it('pre ico bid can be made', () => {
     var easyMineIco = null;
     return EasyMinePreIco.deployed().then(easyMinePreIco => {
-      return easyMinePreIco.buyTokens({from: preIcoBidder, value: web3.toWei(30, "ether")})
+      return easyMinePreIco.sendTransaction({from: preIcoBidder, value: web3.toWei("30", "ether"), gas: 900000})
+      // or buy directly return easyMinePreIco.buyTokens({from: preIcoBidder, value: web3.toWei(30, "ether")})
         .then(_ => easyMinePreIco.totalTokensSold())
         .then(totalTokensSold => {
           assert.equal(bigInt(totalTokensSold.toString()).equals(bigInt("1500e18")), true);
@@ -195,7 +196,8 @@ contract('ICO', accounts => {
     var startBlock = null;
 
     return EasyMineIco.deployed().then(easyMineIco => {
-      return easyMineIco.bid(0, {from: icoBidder, value: web3.toWei("499000", "ether")}) // 399k ether
+      return easyMineIco.sendTransaction({from: icoBidder, value: web3.toWei("499000", "ether"), gas: 2000000})
+      // or bid directly return easyMineIco.bid(0, {from: icoBidder, value: web3.toWei("499000", "ether")}) // 499k ether
         .then(_ => easyMineIco.bids(icoBidder))
         .then(bid => {
           assert.equal(bigInt(bid.toString()).equals(bigInt("499000e18")), true);
@@ -245,7 +247,7 @@ contract('ICO', accounts => {
 
   it('cannot yet claim tokens', () => {
     return EasyMineIco.deployed().then(easyMineIco => {
-      return easyMineIco.claimTokens(0, {from: icoBidder}) // 100k ether
+      return easyMineIco.claimTokens(0, {from: icoBidder})
         .then(_ => {
           assert.equal(true, false); // tx should not succeed
         }).catch(e => {
@@ -255,13 +257,24 @@ contract('ICO', accounts => {
   });
 
   it('can claim tokens', () => {
+    var finalPrice = null;
+    var token = null;
+
     increaseTime(864000); // 10 days
     mineBlock();
     return EasyMineIco.deployed().then(easyMineIco => {
-      return easyMineIco.claimTokens(0, {from: icoBidder}) // 100k ether
+      return easyMineIco.sendTransaction({from: icoBidder, gas: 2000000})
+      // or claim directly return easyMineIco.claimTokens(0, {from: icoBidder})
         .then(_ => EasyMineToken.deployed())
-        .then(token => token.balanceOf(icoBidder))
-        .then(balance => console.log("balance=" + balance.toString()));
+        .then(t => {
+          token = t;
+          return easyMineIco.finalPrice();
+        })
+        .then(fp => {
+          finalPrice = fp;
+          return token.balanceOf(icoBidder);
+        })
+        .then(balance => assert.equal(bigInt("499000e18").multiply("1e18").divide(bigInt(finalPrice.toString())).equals(bigInt(balance.toString())), true));
     });
   });
 

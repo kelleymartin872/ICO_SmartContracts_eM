@@ -55,6 +55,17 @@ contract EasyMinePreIco {
     stage = Stages.Deployed;
   }
 
+  /* Fallback function */
+  function()
+    public
+    payable {
+    if (stage == Stages.Started) {
+      buyTokens();
+    } else {
+      revert();
+    }
+  }
+
   /* Sets up the contract with token and ICO addresses */
   function setup(address _easyMineToken, address _ico)
     isOwner
