@@ -169,9 +169,8 @@ contract EasyMineIco {
     require(_receiver != 0x0);
     require(amount != 0x0);
 
-    if (!wallet.send(amount)) {
-      revert();
-    }
+    assert(wallet.send(amount));
+
     bids[_receiver] += amount;
     totalReceived += amount;
 
@@ -199,8 +198,6 @@ contract EasyMineIco {
     atStage(Stages.AuctionStarted)
     returns (uint256 amount)
   {
-    address receiver = msg.sender;
-
     amount = msg.value;
 
     uint256 currentPrice = calcCurrentTokenPrice();
@@ -219,18 +216,13 @@ contract EasyMineIco {
     if (amount > maxBid) {
       amount = maxBid;
 
-      if (!receiver.send(msg.value - amount)) {
-        revert();
-      }
+      assert(msg.sender.send(msg.value - amount));
     }
 
     assert(amount > 0);
+    assert(wallet.send(amount));
 
-    if (!wallet.send(amount)) {
-      revert();
-    }
-
-    bids[receiver] += amount;
+    bids[msg.sender] += amount;
     totalReceived += amount;
 
     updateEndBlock();
@@ -239,7 +231,7 @@ contract EasyMineIco {
       finalizeAuction();
     }
 
-    BidSubmission(receiver, amount);
+    BidSubmission(msg.sender, amount);
   }
 
   /* updates the foreseen end block */
@@ -263,15 +255,11 @@ contract EasyMineIco {
     timedTransitions
     atStage(Stages.TradingStarted)
   {
-    address receiver = msg.sender;
+    require(bids[msg.sender] != 0);
 
-    require(bids[receiver] != 0);
-
-    uint256 tokenCount = bids[receiver] * 10**18 / finalPrice;
-    bids[receiver] = 0;
-    if (!easyMineToken.transfer(receiver, tokenCount)) {
-      revert();
-    }
+    uint256 tokenCount = bids[msg.sender] * 10**18 / finalPrice;
+    bids[msg.sender] = 0;
+    assert(easyMineToken.transfer(msg.sender, tokenCount));
   }
 
   /* Transfer any ether accidentally left in this contract */
@@ -281,9 +269,7 @@ contract EasyMineIco {
     timedTransitions
     atStage(Stages.TradingStarted)
   {
-    if (!owner.send(this.balance)) {
-      revert();
-    }
+    assert(owner.send(this.balance));
   }
 
   function calcCurrentTokenPrice()

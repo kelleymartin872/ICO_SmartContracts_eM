@@ -107,18 +107,14 @@ contract EasyMinePreIco {
       tokensToReceive = tokensLeft;
       uint256 change = value - (PRICE * tokensToReceive) / 10**18;
       value -= change;
-      if (!msg.sender.send(change)) {
-        // sending change failed
-        revert();
-      }
+      assert(msg.sender.send(change));
     }
 
     // assign the tokens
     // and bid the ICO contract
     totalTokensSold += tokensToReceive;
-    if (!easyMineToken.transfer(msg.sender, tokensToReceive)) {
-      revert();
-    }
+    assert(easyMineToken.transfer(msg.sender, tokensToReceive));
+
     easyMineIco.preIcoBid.value(value)(msg.sender);
   }
 
@@ -141,9 +137,7 @@ contract EasyMinePreIco {
     isOwner
     atStage(Stages.Closed)
   {
-    if (!owner.send(this.balance)) {
-      revert();
-    }
+    assert(owner.send(this.balance));
   }
 
 }
