@@ -3,36 +3,7 @@ var EasyMineIco = artifacts.require("./EasyMineIco.sol");
 var EasyMinePreIco = artifacts.require("./EasyMinePreIco.sol");
 
 var bigInt = require("big-integer");
-var SyncRequest = require('sync-request');
-
-function rpcReq(method, params) {
-  SyncRequest(
-    'POST',
-    'http://127.0.0.1:8545',
-    {
-      json: {
-        'jsonrpc': '2.0',
-        'method': method,
-        'params': params,
-        'id': 'asd'
-      }
-    }
-  );
-}
-
-function mineBlock() {
-  rpcReq('evm_mine', []);
-}
-
-function mineBlocks(n) {
-  for (i = 0; i < n; i++) {
-    mineBlock();
-  }
-}
-
-function increaseTime(bySeconds) {
-  rpcReq('evm_increaseTime', [bySeconds]);
-}
+var rpcUtils = require('./TestrpcUtils.js');
 
 contract('ICO', accounts => {
 
@@ -45,7 +16,7 @@ contract('ICO', accounts => {
 
   it('not allow to bid', () => {
     return EasyMineIco.deployed().then(easyMineIco => {
-      return easyMineIco.bid(0, {from: icoBidder})
+      return easyMineIco.bid({from: icoBidder})
         .then(_ => {
           assert.equal(true, false); // tx should not succeed
         }).catch(e => {
@@ -173,7 +144,7 @@ contract('ICO', accounts => {
 
   it('action should be started at start block', () => {
     var blocksLeft = startBlock - web3.eth.blockNumber;
-    mineBlocks(blocksLeft + 1);
+    rpcUtils.mineBlocks(blocksLeft + 1);
     return EasyMineIco.deployed().then(easyMineIco => {
       return easyMineIco.updateStage()
         .then(_ => easyMineIco.stage())
@@ -197,7 +168,7 @@ contract('ICO', accounts => {
 
     return EasyMineIco.deployed().then(easyMineIco => {
       return easyMineIco.sendTransaction({from: icoBidder, value: web3.toWei("499000", "ether"), gas: 2000000})
-      // or bid directly return easyMineIco.bid(0, {from: icoBidder, value: web3.toWei("499000", "ether")}) // 499k ether
+      // or bid directly return easyMineIco.bid({from: icoBidder, value: web3.toWei("499000", "ether")}) // 499k ether
         .then(_ => easyMineIco.bids(icoBidder))
         .then(bid => {
           assert.equal(bigInt(bid.toString()).equals(bigInt("499000e18")), true);
@@ -219,7 +190,7 @@ contract('ICO', accounts => {
     var startBlock = null;
 
     return EasyMineIco.deployed().then(easyMineIco => {
-      return easyMineIco.bid(0, {from: anotherIcoBidder, value: web3.toWei("100000", "ether")}) // 100k ether
+      return easyMineIco.bid({from: anotherIcoBidder, value: web3.toWei("100000", "ether")}) // 100k ether
         .then(_ => easyMineIco.bids(anotherIcoBidder))
         .then(bid => {
           assert.equal(bigInt(bid.toString()).equals(bigInt("970e18")), true);
@@ -247,7 +218,7 @@ contract('ICO', accounts => {
 
   it('cannot yet claim tokens', () => {
     return EasyMineIco.deployed().then(easyMineIco => {
-      return easyMineIco.claimTokens(0, {from: icoBidder})
+      return easyMineIco.claimTokens({from: icoBidder})
         .then(_ => {
           assert.equal(true, false); // tx should not succeed
         }).catch(e => {
@@ -260,11 +231,11 @@ contract('ICO', accounts => {
     var finalPrice = null;
     var token = null;
 
-    increaseTime(864000); // 10 days
-    mineBlock();
+    rpcUtils.increaseTimeDays(10);
+    rpcUtils.mineBlock();
     return EasyMineIco.deployed().then(easyMineIco => {
       return easyMineIco.sendTransaction({from: icoBidder, gas: 2000000})
-      // or claim directly return easyMineIco.claimTokens(0, {from: icoBidder})
+      // or claim directly return easyMineIco.claimTokens({from: icoBidder})
         .then(_ => EasyMineToken.deployed())
         .then(t => {
           token = t;

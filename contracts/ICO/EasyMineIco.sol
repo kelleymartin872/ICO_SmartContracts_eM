@@ -1,4 +1,4 @@
-pragma solidity ^0.4.10;
+pragma solidity ^0.4.13;
 
 import "../Token/EasyMineToken.sol";
 
@@ -70,30 +70,22 @@ contract EasyMineIco {
   }
 
   modifier atStage(Stages _stage) {
-    if (stage != _stage) {
-      revert();
-    }
+    require(stage == _stage);
     _;
   }
 
   modifier isOwner() {
-    if (msg.sender != owner) {
-      revert();
-    }
+    require(msg.sender == owner);
     _;
   }
 
   modifier isPreIco() {
-    if (msg.sender != preIcoAddress) {
-      revert();
-    }
+    require(msg.sender == preIcoAddress);
     _;
   }
 
   modifier isValidPayload() {
-    if (msg.data.length != 0 && msg.data.length != 4 && msg.data.length != 36) {
-      revert();
-    }
+    require(msg.data.length == 0 || msg.data.length == 4);
     _;
   }
 
@@ -112,9 +104,8 @@ contract EasyMineIco {
 
   function EasyMineIco(address _wallet)
     public {
-    if (_wallet == 0) {
-      revert();
-    }
+    require(_wallet != 0x0);
+
     owner = msg.sender;
     wallet = _wallet;
     stage = Stages.AuctionDeployed;
@@ -126,9 +117,9 @@ contract EasyMineIco {
     payable
     timedTransitions {
     if (stage == Stages.AuctionStarted) {
-      bid(msg.sender);
+      bid();
     } else if (stage == Stages.TradingStarted) {
-      claimTokens(msg.sender);
+      claimTokens();
     } else {
       revert();
     }
@@ -140,15 +131,15 @@ contract EasyMineIco {
     isOwner
     atStage(Stages.AuctionDeployed)
   {
-    if (_easyMineToken == 0 || _preIcoAddress == 0) {
-      revert();
-    }
+    require(_easyMineToken != 0x0);
+    require(_preIcoAddress != 0x0);
+
     easyMineToken = EasyMineToken(_easyMineToken);
     preIcoAddress = _preIcoAddress;
+
     // Validate token balance
-    if (easyMineToken.balanceOf(this) != MAX_TOKENS_SOLD) {
-      revert();
-    }
+    assert(easyMineToken.balanceOf(this) == MAX_TOKENS_SOLD);
+
     stage = Stages.AuctionSetUp;
   }
 
@@ -159,9 +150,8 @@ contract EasyMineIco {
     atStage(Stages.AuctionSetUp)
   {
     // Start allowed minimum 3000 blocks from now
-    if (block.number + 3000 >= _startBlock) {
-      revert();
-    }
+    require(_startBlock > block.number + 3000);
+
     startBlock = _startBlock;
     endBlock = startBlock + MAX_DURATION_BLOCKS;
     stage = Stages.AuctionStartScheduled;
@@ -169,25 +159,23 @@ contract EasyMineIco {
 
   /* Submits a pre ICO bid */
   function preIcoBid(address _receiver)
-    public
+    external
     payable
     isPreIco
     timedTransitions
     atStage(Stages.AuctionStartScheduled)
   {
     uint256 amount = msg.value;
-    if (_receiver == 0 || amount == 0) {
-      revert();
-    }
+    require(_receiver != 0x0);
+    require(amount != 0x0);
+
     if (!wallet.send(amount)) {
       revert();
     }
     bids[_receiver] += amount;
     totalReceived += amount;
 
-    if (totalReceived > PRE_ICO_BIDS_CEILING) {
-      revert();
-    }
+    assert(totalReceived <= PRE_ICO_BIDS_CEILING);
 
     updateEndBlock();
 
@@ -203,18 +191,16 @@ contract EasyMineIco {
   }
 
   /* Submits a bid */
-  function bid(address receiver)
+  function bid()
     public
     payable
     isValidPayload
     timedTransitions
     atStage(Stages.AuctionStarted)
-    returns (uint amount)
+    returns (uint256 amount)
   {
-    // If a bid is done on behalf of a user via ShapeShift, the receiver address is set.
-    if (receiver == 0) {
-      receiver = msg.sender;
-    }
+    address receiver = msg.sender;
+
     amount = msg.value;
 
     uint256 currentPrice = calcCurrentTokenPrice();
@@ -238,9 +224,7 @@ contract EasyMineIco {
       }
     }
 
-    if (amount <= 0) {
-      revert();
-    }
+    assert(amount > 0);
 
     if (!wallet.send(amount)) {
       revert();
@@ -273,23 +257,33 @@ contract EasyMineIco {
   }
 
   /* Claims the tokens after auction ended */
-  function claimTokens(address receiver)
+  function claimTokens()
     public
     isValidPayload
     timedTransitions
     atStage(Stages.TradingStarted)
   {
-    if (receiver == 0) {
-      receiver = msg.sender;
-    }
+    address receiver = msg.sender;
 
-    if (bids[receiver] == 0) {
-      revert();
-    }
+    require(bids[receiver] != 0);
 
     uint256 tokenCount = bids[receiver] * 10**18 / finalPrice;
     bids[receiver] = 0;
-    easyMineToken.transfer(receiver, tokenCount);
+    if (!easyMineToken.transfer(receiver, tokenCount)) {
+      revert();
+    }
+  }
+
+  /* Transfer any ether accidentally left in this contract */
+  function cleanup()
+    public
+    isOwner
+    timedTransitions
+    atStage(Stages.TradingStarted)
+  {
+    if (!owner.send(this.balance)) {
+      revert();
+    }
   }
 
   function calcCurrentTokenPrice()
@@ -330,4 +324,5 @@ contract EasyMineIco {
       easyMineToken.burn(unsoldTokens);
     }
   }
+
 }
