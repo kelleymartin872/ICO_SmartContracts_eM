@@ -1,6 +1,6 @@
 import "./StandardToken.sol";
 
-pragma solidity ^0.4.10;
+pragma solidity ^0.4.13;
 
 contract EasyMineToken is StandardToken {
 
@@ -12,9 +12,10 @@ contract EasyMineToken is StandardToken {
                          address _preIcoAddress,
                          address _easyMineWalletAddress,
                          address _bountyWalletAddress) {
-    if (_icoAddress == 0 || _preIcoAddress == 0 || _easyMineWalletAddress == 0 || _bountyWalletAddress == 0) {
-      revert();
-    }
+    require(_icoAddress != 0x0);
+    require(_preIcoAddress != 0x0);
+    require(_easyMineWalletAddress != 0x0);
+    require(_bountyWalletAddress != 0x0);
 
     totalSupply = 33000000 * 10**18;                     // 33.000.000 EMT
 
@@ -29,9 +30,7 @@ contract EasyMineToken is StandardToken {
 
     uint256 bountyTokens = 1000000 * 10**18;             // 1.000.000 EMT
 
-    if (icoTokens + preIcoTokens + easyMineTokens + bountyTokens != totalSupply) {
-      revert();
-    }
+    assert(icoTokens + preIcoTokens + easyMineTokens + bountyTokens == totalSupply);
 
     balances[_icoAddress] = icoTokens;
     Transfer(0, _icoAddress, icoTokens);
@@ -50,6 +49,7 @@ contract EasyMineToken is StandardToken {
     if (balances[msg.sender] >= _value && _value > 0) {
       balances[msg.sender] -= _value;
       totalSupply -= _value;
+      Transfer(msg.sender, 0x0, _value);
       return true;
     } else {
       return false;

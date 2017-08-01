@@ -1,4 +1,4 @@
-pragma solidity ^0.4.10;
+pragma solidity ^0.4.13;
 
 import "../Token/Token.sol";
 
@@ -13,9 +13,7 @@ contract EasyMineTokenWallet {
   uint256 public totalWithdrawn;
 
   modifier isOwner() {
-    if (msg.sender != owner) {
-      revert();
-    }
+    require(msg.sender == owner);
     _;
   }
 
@@ -27,9 +25,8 @@ contract EasyMineTokenWallet {
     public
     isOwner
   {
-    if (_easyMineToken == 0) {
-      revert();
-    }
+    require(_easyMineToken != 0x0);
+
     easyMineToken = Token(_easyMineToken);
     startTime = now;
   }
@@ -37,6 +34,7 @@ contract EasyMineTokenWallet {
   function withdraw(uint256 requestedAmount)
     public
     isOwner
+    returns (uint256 amount)
   {
     uint256 limit = maxPossibleWithdrawal();
     uint256 withdrawalAmount = requestedAmount;
@@ -45,9 +43,13 @@ contract EasyMineTokenWallet {
     }
 
     if (withdrawalAmount > 0) {
-      easyMineToken.transfer(owner, withdrawalAmount);
+      if (!easyMineToken.transfer(owner, withdrawalAmount)) {
+        revert();
+      }
       totalWithdrawn += withdrawalAmount;
     }
+
+    return withdrawalAmount;
   }
 
   function maxPossibleWithdrawal()
@@ -55,11 +57,16 @@ contract EasyMineTokenWallet {
     constant
     returns (uint256)
   {
-    if (startTime + VESTING_PERIOD < now) {
+    if (now < startTime + VESTING_PERIOD) {
       return 0;
     } else {
-      uint256 daysPassed = (now - startTime + VESTING_PERIOD) / 86400;
-      return DAILY_FUNDS_RELEASE * daysPassed - totalWithdrawn;
+      uint256 daysPassed = (now - (startTime + VESTING_PERIOD)) / 86400;
+      uint256 res = DAILY_FUNDS_RELEASE * daysPassed - totalWithdrawn;
+      if (res < 0) {
+        return 0;
+      } else {
+        return res;
+      }
     }
   }
 

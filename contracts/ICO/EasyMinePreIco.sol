@@ -1,4 +1,4 @@
-pragma solidity ^0.4.10;
+pragma solidity ^0.4.13;
 
 import "../Token/EasyMineToken.sol";
 import "./EasyMineIco.sol";
@@ -37,16 +37,12 @@ contract EasyMinePreIco {
   }
 
   modifier atStage(Stages _stage) {
-    if (stage != _stage) {
-      revert();
-    }
+    require(stage == _stage);
     _;
   }
 
   modifier isOwner() {
-    if (msg.sender != owner) {
-      revert();
-    }
+    require(msg.sender == owner);
     _;
   }
 
@@ -71,16 +67,15 @@ contract EasyMinePreIco {
     isOwner
     atStage(Stages.Deployed)
   {
-    if (_easyMineToken == 0 || _ico == 0) {
-      revert();
-    }
+    require(_easyMineToken != 0x0);
+    require(_ico != 0x0);
+
     easyMineToken = EasyMineToken(_easyMineToken);
     easyMineIco = EasyMineIco(_ico);
 
     // Validate token balance
-    if (easyMineToken.balanceOf(this) != PRE_ICO_TOKENS) {
-      revert();
-    }
+    assert(easyMineToken.balanceOf(this) == PRE_ICO_TOKENS);
+
     stage = Stages.SetUp;
   }
 
@@ -100,18 +95,10 @@ contract EasyMinePreIco {
     atStage(Stages.Started) {
 
     uint256 tokensLeft = PRE_ICO_TOKENS - totalTokensSold;
-
-    if (tokensLeft < 1) {
-      // no more pre ICO tokens
-      revert();
-    }
+    assert(tokensLeft > 0);
 
     uint256 value = msg.value;
-
-    if (value < MIN_VALUE) {
-      // value less than required minimum
-      revert();
-    }
+    require(value >= MIN_VALUE);
 
     uint256 tokensToReceive = (value * 10**18) / PRICE;
 
@@ -120,16 +107,14 @@ contract EasyMinePreIco {
       tokensToReceive = tokensLeft;
       uint256 change = value - (PRICE * tokensToReceive) / 10**18;
       value -= change;
-      if (!msg.sender.send(change)) {
-        // sending change failed
-        revert();
-      }
+      assert(msg.sender.send(change));
     }
 
     // assign the tokens
     // and bid the ICO contract
     totalTokensSold += tokensToReceive;
-    easyMineToken.transfer(msg.sender, tokensToReceive);
+    assert(easyMineToken.transfer(msg.sender, tokensToReceive));
+
     easyMineIco.preIcoBid.value(value)(msg.sender);
   }
 
@@ -144,6 +129,15 @@ contract EasyMinePreIco {
       easyMineToken.burn(remainingTokens);
     }
     stage = Stages.Closed;
+  }
+
+  /* Transfer any ether accidentally left in this contract */
+  function cleanup()
+    public
+    isOwner
+    atStage(Stages.Closed)
+  {
+    assert(owner.send(this.balance));
   }
 
 }

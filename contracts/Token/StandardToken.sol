@@ -6,7 +6,7 @@
 
   Implements ERC 20 Token standard: https://github.com/ethereum/EIPs/issues/20
   .*/
-pragma solidity ^0.4.10;
+pragma solidity ^0.4.13;
 
 import "./Token.sol";
 
