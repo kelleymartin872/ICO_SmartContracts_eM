@@ -43,8 +43,8 @@ contract('EasyMineTokenWallet', accounts => {
     return EasyMineToken.deployed().then(easyMineToken => {
       return EasyMineTokenWallet.deployed().then(tokenWallet => {
         return tokenWallet.withdraw(bigInt("29000e18").toString())
-          .then(_ => tokenWallet.owner())
-          .then(owner => easyMineToken.balanceOf(owner))
+          .then(_ => tokenWallet.withdrawalAddress())
+          .then(withdrawalAddress => easyMineToken.balanceOf(withdrawalAddress))
           .then(bal => assert.equal(bigInt(bal.toString()).equals(bigInt("29000e18")), true))
           .then(_ => tokenWallet.maxPossibleWithdrawal())
           .then(maxWithdrawal => assert.equal(bigInt(maxWithdrawal.toString()).equals(bigInt("1000e18")), true));
