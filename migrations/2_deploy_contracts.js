@@ -19,26 +19,26 @@ var bountyWalletAddress = config.bountyWalletAddress; //"0xca5DA912c9638856C69eb
 var emtWithdrawalAddress = config.emtWithdrawalAddress;
 
 module.exports = function(deployer) {
-  deployer.deploy(EasyMineIco, walletAddress, {from: ownerAddress, gasPrice: config.gasPrice}).then(function() {
-    return deployer.deploy(EasyMinePreIco, {from: ownerAddress, gasPrice: config.gasPrice});
+  deployer.deploy(EasyMineIco, walletAddress, {from: ownerAddress, gasPrice: config.gasPrice, gas: config.gasLimit}).then(function() {
+    return deployer.deploy(EasyMinePreIco, {from: ownerAddress, gasPrice: config.gasPrice, gas: config.gasLimit});
   }).then(function() {
-    return deployer.deploy(EasyMineTokenWallet, {from: ownerAddress, gasPrice: config.gasPrice});
+    return deployer.deploy(EasyMineTokenWallet, {from: ownerAddress, gasPrice: config.gasPrice, gas: config.gasLimit});
   }).then(function() {
-    return deployer.deploy(EasyMineToken, EasyMineIco.address, EasyMinePreIco.address, EasyMineTokenWallet.address, bountyWalletAddress, {from: ownerAddress, gasPrice: config.gasPrice});
+    return deployer.deploy(EasyMineToken, EasyMineIco.address, EasyMinePreIco.address, EasyMineTokenWallet.address, bountyWalletAddress, {from: ownerAddress, gasPrice: config.gasPrice, gas: config.gasLimit});
   }).then(function() {
     return EasyMineIco.deployed();
   }).then(function(icoInstance) {
-    return icoInstance.setup(EasyMineToken.address, EasyMinePreIco.address, {from: ownerAddress, gasPrice: config.gasPrice});
+    return icoInstance.setup(EasyMineToken.address, EasyMinePreIco.address, {from: ownerAddress, gasPrice: config.gasPrice, gas: config.gasLimit});
   }).then(function(result) {
     console.log("ICO contract set up in tx: " + result.tx);
     return EasyMinePreIco.deployed();
   }).then(function(preIcoInstance) {
-    return preIcoInstance.setup(EasyMineToken.address, EasyMineIco.address, {from: ownerAddress, gasPrice: config.gasPrice});
+    return preIcoInstance.setup(EasyMineToken.address, EasyMineIco.address, {from: ownerAddress, gasPrice: config.gasPrice, gas: config.gasLimit});
   }).then(function(result) {
     console.log("Pre ICO contract set up in tx: " + result.tx);
     return EasyMineTokenWallet.deployed();
   }).then(function(tokenWalletInstance) {
-    return tokenWalletInstance.setup(EasyMineToken.address, emtWithdrawalAddress, {from: ownerAddress, gasPrice: config.gasPrice});
+    return tokenWalletInstance.setup(EasyMineToken.address, emtWithdrawalAddress, {from: ownerAddress, gasPrice: config.gasPrice, gas: config.gasLimit});
   }).then(function(result) {
     console.log("Token wallet contract set up in tx: " + result.tx);
     console.log("ICO contracts successfully set up");

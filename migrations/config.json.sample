@@ -1,7 +1,8 @@
 {
-  "ownerAddress":"0x61Dc38Ae10810Aef407e8b8e4814A96089bDB702",
-  "walletAddress": "0x04B8c5e1Dc01E0Ca4dc85AAd06899291620B1cAa",
-  "bountyWalletAddress":"0xE53000aBa403B9589A8be17dF576aC42F4511faE",
+  "ownerAddress":"0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1",
+  "walletAddress": "0x2A3362bDF864915C2eb996cEE868a841586F4aD4",
+  "bountyWalletAddress":"0xca5DA912c9638856C69eb3a00eBea073142B0315",
   "emtWithdrawalAddress": "0xc7FE2c59904efB1534C83f5A04C4e8306d0b7086",
-  "gasPrice": 25000000000
+  "gasPrice": 25000000000,
+  "gasLimit": 4000000
 }
