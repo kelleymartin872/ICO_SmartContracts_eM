@@ -3,7 +3,7 @@ var EasyMineIco = artifacts.require("./EasyMineIco.sol");
 var EasyMinePreIco = artifacts.require("./EasyMinePreIco.sol");
 var EasyMineToken = artifacts.require("./EasyMineToken.sol");
 
-var config = require("./config.json");
+var config = require("./config-test.json");
 
 console.log("Configuration:", config);
 
