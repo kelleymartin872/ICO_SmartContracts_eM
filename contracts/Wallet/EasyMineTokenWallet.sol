@@ -8,6 +8,7 @@ contract EasyMineTokenWallet {
   uint256 constant public DAILY_FUNDS_RELEASE = 15000 * 10**18; // 0.5% * 3M tokens = 15k tokens a day
 
   address public owner;
+  address public withdrawalAddress;
   Token public easyMineToken;
   uint256 public startTime;
   uint256 public totalWithdrawn;
@@ -21,13 +22,15 @@ contract EasyMineTokenWallet {
     owner = msg.sender;
   }
 
-  function setup(address _easyMineToken)
+  function setup(address _easyMineToken, address _withdrawalAddress)
     public
     isOwner
   {
     require(_easyMineToken != 0x0);
+    require(_withdrawalAddress != 0x0);
 
     easyMineToken = Token(_easyMineToken);
+    withdrawalAddress = _withdrawalAddress;
     startTime = now;
   }
 
@@ -43,7 +46,7 @@ contract EasyMineTokenWallet {
     }
 
     if (withdrawalAmount > 0) {
-      if (!easyMineToken.transfer(owner, withdrawalAmount)) {
+      if (!easyMineToken.transfer(withdrawalAddress, withdrawalAmount)) {
         revert();
       }
       totalWithdrawn += withdrawalAmount;
