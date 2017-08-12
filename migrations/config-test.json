@@ -1,5 +1,7 @@
 {
   "ownerAddress":"0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1",
+  "sysAddress":"0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1",
+  "preIcoAddress":"0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1",
   "walletAddress": "0x2A3362bDF864915C2eb996cEE868a841586F4aD4",
   "bountyWalletAddress":"0xca5DA912c9638856C69eb3a00eBea073142B0315",
   "emtWithdrawalAddress": "0xc7FE2c59904efB1534C83f5A04C4e8306d0b7086",
