@@ -143,7 +143,7 @@ contract EasyMineIco {
   function scheduleStart(uint256 _startBlock)
     public
     isOwner
-    atStage(Stages.etUp)
+    atStage(Stages.SetUp)
   {
     // Start allowed minimum 5000 blocks from now
     require(_startBlock > block.number + 5000);
@@ -183,7 +183,7 @@ contract EasyMineIco {
         tokens = maxTokensByAmount;
       }
       priceThresholds[i].tokensSold += tokens;
-      amountRemaining -= priceThresholds[i].price * tokens;
+      amountRemaining -= (priceThresholds[i].price * tokens) / 10**18;
       tokensToReceive += tokens;
     }
 
