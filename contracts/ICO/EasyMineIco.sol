@@ -4,31 +4,23 @@ import "../Token/EasyMineToken.sol";
 
 contract EasyMineIco {
 
-  event BidSubmission(address indexed sender, uint256 amount);
+  event TokensSold(address indexed buyer, uint256 amount);
+  event TokensReserved(uint256 amount);
 
-  /* Maximum number of tokens sold during ICO */
-  uint256 constant public MAX_TOKENS_SOLD = 27000000 * 10**18; // 27,000,000 tokens
-
-  /* Waiting period before claiming the tokens after ICO ended */
-  uint256 constant public WAITING_PERIOD = 7 days;
+  struct PriceThreshold {
+    uint256 tokenCount;
+    uint256 price;
+    uint256 tokensSold;
+  }
 
   /* Maximum duration of ICO */
-  uint256 constant public MAX_DURATION_BLOCKS = 198000;
-
-  /* Maximum amount of ether collected during ICO */
-  uint256 constant public AUCTION_BIDS_CEILING = 500000 * 10**18; // 500,000 ether
-
-  /* Maximum number of ether collected during pre ICO */
-  uint256 constant public PRE_ICO_BIDS_CEILING = 40000 * 10**18; // 40,000 ether
-
-  /* Auction starting price */
-  uint256 constant public INITIAL_PRICE = 0.2 * 10**18; // 0.2 ETC for 1 EMT initially
-
-  /* How much the price is reduced in each block */
-  uint256 constant public PRICE_REDUCTION_PER_BLOCK = 0.000001 * 10**18;
+  uint256 constant public MAX_DURATION_BLOCKS = 200000;
 
   /* The owner of this contract */
   address public owner;
+
+  /* The sys address that handles token reservation */
+  address public sys;
 
   /* The easyMINE wallet address */
   address public wallet;
@@ -36,37 +28,21 @@ contract EasyMineIco {
   /* The easyMINE token */
   EasyMineToken public easyMineToken;
 
-  /* Pre ICO contract address */
-  address public preIcoAddress;
-
-  /* Auction starting block */
+  /* ICO start block */
   uint256 public startBlock;
 
-  /* Auction end time */
-  uint256 public endTime;
-
-  /* Total amount of ether received */
-  uint256 public totalReceived;
-
-  /* Auction final price */
-  uint256 public finalPrice;
-
-  /* Foreseen auction end block */
-  uint256 public endBlock;
-
-  /* Auction bids */
-  mapping (address => uint256) public bids;
+  /* The three price thresholds */
+  PriceThreshold[3] public priceThresholds;
 
   /* Current stage */
   Stages public stage;
 
   enum Stages {
-    AuctionDeployed,
-    AuctionSetUp,
-    AuctionStartScheduled,
-    AuctionStarted,
-    AuctionEnded,
-    TradingStarted
+    Deployed,
+    SetUp,
+    StartScheduled,
+    Started,
+    Ended
   }
 
   modifier atStage(Stages _stage) {
@@ -79,8 +55,8 @@ contract EasyMineIco {
     _;
   }
 
-  modifier isPreIco() {
-    require(msg.sender == preIcoAddress);
+  modifier isSys() {
+    require(msg.sender == sys);
     _;
   }
 
@@ -90,14 +66,11 @@ contract EasyMineIco {
   }
 
   modifier timedTransitions() {
-    if (stage == Stages.AuctionStartScheduled && block.number >= startBlock) {
-      stage = Stages.AuctionStarted;
+    if (stage == Stages.StartScheduled && block.number >= startBlock) {
+      stage = Stages.Started;
     }
-    if (stage == Stages.AuctionStarted && block.number >= endBlock) {
-      finalizeAuction();
-    }
-    if (stage == Stages.AuctionEnded && now > endTime + WAITING_PERIOD) {
-      stage = Stages.TradingStarted;
+    if (stage == Stages.Started && block.number >= startBlock + MAX_DURATION_BLOCKS) {
+      finalize();
     }
     _;
   }
@@ -108,7 +81,7 @@ contract EasyMineIco {
 
     owner = msg.sender;
     wallet = _wallet;
-    stage = Stages.AuctionDeployed;
+    stage = Stages.Deployed;
   }
 
   /* Fallback function */
@@ -116,69 +89,67 @@ contract EasyMineIco {
     public
     payable
     timedTransitions {
-    if (stage == Stages.AuctionStarted) {
-      bid();
-    } else if (stage == Stages.TradingStarted) {
-      claimTokens();
+    if (stage == Stages.Started) {
+      buyTokens();
     } else {
       revert();
     }
   }
 
-  /* Sets up the token and pre ICO addresses */
-  function setup(address _easyMineToken, address _preIcoAddress)
+  function setup(address _easyMineToken, address _sys)
     public
     isOwner
-    atStage(Stages.AuctionDeployed)
+    atStage(Stages.Deployed)
   {
     require(_easyMineToken != 0x0);
-    require(_preIcoAddress != 0x0);
+    require(_sys != 0x0);
+
+    priceThresholds[0] = PriceThreshold(2000000  * 10**18, 0.00070 * 10**18, 0);
+    priceThresholds[1] = PriceThreshold(2000000  * 10**18, 0.00075 * 10**18, 0);
+    priceThresholds[2] = PriceThreshold(23000000 * 10**18, 0.00080 * 10**18, 0);
 
     easyMineToken = EasyMineToken(_easyMineToken);
-    preIcoAddress = _preIcoAddress;
+    sys = _sys;
 
     // Validate token balance
-    assert(easyMineToken.balanceOf(this) == MAX_TOKENS_SOLD);
+    assert(easyMineToken.balanceOf(this) == maxTokensSold());
 
-    stage = Stages.AuctionSetUp;
+    stage = Stages.SetUp;
   }
 
-  /* Schedules start of the auction */
+  function maxTokensSold()
+    public
+    constant
+    returns (uint256) {
+    uint256 total = 0;
+    for (uint8 i = 0; i < priceThresholds.length; i++) {
+      total += priceThresholds[i].tokenCount;
+    }
+    return total;
+  }
+
+  function totalTokensSold()
+    public
+    constant
+    returns (uint256) {
+    uint256 total = 0;
+    for (uint8 i = 0; i < priceThresholds.length; i++) {
+      total += priceThresholds[i].tokensSold;
+    }
+    return total;
+  }
+
+  /* Schedules start of the ICO */
   function scheduleStart(uint256 _startBlock)
     public
     isOwner
-    atStage(Stages.AuctionSetUp)
+    atStage(Stages.SetUp)
   {
-    // Start allowed minimum 3000 blocks from now
-    require(_startBlock > block.number + 3000);
+    // Start allowed minimum 5000 blocks from now
+    require(_startBlock > block.number + 5000);
 
     startBlock = _startBlock;
-    endBlock = startBlock + MAX_DURATION_BLOCKS;
-    stage = Stages.AuctionStartScheduled;
-  }
-
-  /* Submits a pre ICO bid */
-  function preIcoBid(address _receiver)
-    external
-    payable
-    isPreIco
-    timedTransitions
-    atStage(Stages.AuctionStartScheduled)
-  {
-    uint256 amount = msg.value;
-    require(_receiver != 0x0);
-    require(amount != 0x0);
-
-    assert(wallet.send(amount));
-
-    bids[_receiver] += amount;
-    totalReceived += amount;
-
-    assert(totalReceived <= PRE_ICO_BIDS_CEILING);
-
-    updateEndBlock();
-
-    BidSubmission(_receiver, amount);
+    stage = Stages.StartScheduled;
   }
 
   function updateStage()
@@ -189,77 +160,81 @@ contract EasyMineIco {
     return stage;
   }
 
-  /* Submits a bid */
-  function bid()
+  function buyTokens()
     public
     payable
     isValidPayload
     timedTransitions
-    atStage(Stages.AuctionStarted)
-    returns (uint256 amount)
+    atStage(Stages.Started)
   {
-    amount = msg.value;
+    require(msg.value > 0);
 
-    uint256 currentPrice = calcCurrentTokenPrice();
+    uint256 amountRemaining = msg.value;
+    uint256 tokensToReceive = 0;
 
-    uint256 maxBidByCeiling = AUCTION_BIDS_CEILING - totalReceived;
+    for (uint8 i = 0; i < priceThresholds.length; i++) {
+      uint256 tokensAvailable = priceThresholds[i].tokenCount - priceThresholds[i].tokensSold;
+      uint256 maxTokensByAmount = amountRemaining * 10**18 / priceThresholds[i].price;
 
-    uint256 maxBidBySoldTokens = (MAX_TOKENS_SOLD / 10**18) * currentPrice - totalReceived;
-
-    uint256 maxBid;
-    if (maxBidByCeiling > maxBidBySoldTokens) {
-      maxBid = maxBidBySoldTokens;
-    } else {
-      maxBid = maxBidByCeiling;
+      uint256 tokens;
+      if (maxTokensByAmount > tokensAvailable) {
+        tokens = tokensAvailable;
+      } else {
+        tokens = maxTokensByAmount;
+      }
+      priceThresholds[i].tokensSold += tokens;
+      amountRemaining -= (priceThresholds[i].price * tokens) / 10**18;
+      tokensToReceive += tokens;
     }
 
-    if (amount > maxBid) {
-      amount = maxBid;
+    assert(tokensToReceive > 0);
 
-      assert(msg.sender.send(msg.value - amount));
+    if (amountRemaining != 0) {
+      assert(msg.sender.send(amountRemaining));
     }
 
-    assert(amount > 0);
-    assert(wallet.send(amount));
+    assert(wallet.send(msg.value - amountRemaining));
+    assert(easyMineToken.transfer(msg.sender, tokensToReceive));
 
-    bids[msg.sender] += amount;
-    totalReceived += amount;
-
-    updateEndBlock();
-
-    if (amount == maxBid) {
-      finalizeAuction();
+    if (totalTokensSold() == maxTokensSold()) {
+      finalize();
     }
 
-    BidSubmission(msg.sender, amount);
+    TokensSold(msg.sender, tokensToReceive);
   }
 
-  /* updates the foreseen end block */
-  function updateEndBlock() private {
-    // the minimum price we can reach not to exceed max tokens count
-    uint256 minimumPrice = totalReceived * 10**18 / MAX_TOKENS_SOLD;
-
-    // block at which minimum price will be reached
-    uint256 minimumPriceBlock = startBlock + (INITIAL_PRICE - minimumPrice) / PRICE_REDUCTION_PER_BLOCK;
-
-    // if minimum price will be reached sooner than current endBlock, update it
-    if (minimumPriceBlock < endBlock) {
-      endBlock = minimumPriceBlock;
-    }
-  }
-
-  /* Claims the tokens after auction ended */
-  function claimTokens()
+  function reserveTokens(uint256 tokenCount)
     public
-    isValidPayload
+    isSys
     timedTransitions
-    atStage(Stages.TradingStarted)
+    atStage(Stages.Started)
   {
-    require(bids[msg.sender] != 0);
+    require(tokenCount > 0);
 
-    uint256 tokenCount = bids[msg.sender] * 10**18 / finalPrice;
-    bids[msg.sender] = 0;
-    assert(easyMineToken.transfer(msg.sender, tokenCount));
+    uint256 tokensRemaining = tokenCount;
+
+    for (uint8 i = 0; i < priceThresholds.length; i++) {
+      uint256 tokensAvailable = priceThresholds[i].tokenCount - priceThresholds[i].tokensSold;
+
+      uint256 tokens;
+      if (tokensRemaining > tokensAvailable) {
+        tokens = tokensAvailable;
+      } else {
+        tokens = tokensRemaining;
+      }
+      priceThresholds[i].tokensSold += tokens;
+      tokensRemaining -= tokens;
+    }
+
+    uint256 tokensReserved = tokenCount - tokensRemaining;
+
+    assert(easyMineToken.transfer(sys, tokensReserved));
+
+    if (totalTokensSold() == maxTokensSold()) {
+      finalize();
+    }
+
+    TokensReserved(tokensReserved);
   }
 
   /* Transfer any ether accidentally left in this contract */
@@ -267,48 +242,19 @@ contract EasyMineIco {
     public
     isOwner
     timedTransitions
-    atStage(Stages.TradingStarted)
+    atStage(Stages.Ended)
   {
     assert(owner.send(this.balance));
   }
 
-  function calcCurrentTokenPrice()
-    constant
-    public
-    returns (uint256) {
-    return calcTokenPrice(block.number);
-  }
-
-  function calcTokenPrice(uint256 blockNumber)
-    constant
-    public
-    returns (uint256)
-  {
-    uint256 blockDiff = blockNumber - startBlock;
-    uint256 priceReduction = blockDiff * PRICE_REDUCTION_PER_BLOCK;
-    return INITIAL_PRICE - priceReduction;
-  }
-
-  function finalizeAuction()
+  function finalize()
     private
   {
-    stage = Stages.AuctionEnded;
-    endTime = now;
+    stage = Stages.Ended;
 
-    if (block.number > endBlock) {
-      // if the acution has ended at endBlock, final price is the price at that block
-      finalPrice = calcTokenPrice(endBlock);
-    } else {
-      // if the auction has ended before reaching endBlock, final price is the price at current block
-      finalPrice = calcTokenPrice(block.number);
-    }
     // burn unsold tokens
-    uint256 soldTokens = (totalReceived * 10**18) / finalPrice;
-    uint256 unsoldTokens = MAX_TOKENS_SOLD - soldTokens;
-
-    if (unsoldTokens > 0) {
-      easyMineToken.burn(unsoldTokens);
-    }
+    uint256 balance = easyMineToken.balanceOf(this);
+    easyMineToken.burn(balance);
   }
 
 }

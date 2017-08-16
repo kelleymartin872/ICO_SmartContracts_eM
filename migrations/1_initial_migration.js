@@ -1,6 +1,6 @@
 var Migrations = artifacts.require("./Migrations.sol");
 
-var config = require("./config.json");
+var config = require("./config-test.json");
 
 console.log("Configuration:", config);
 

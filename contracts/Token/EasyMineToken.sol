@@ -4,7 +4,7 @@ pragma solidity ^0.4.13;
 
 contract EasyMineToken is StandardToken {
 
-  string public constant name = "EasyMine Token";
+  string public constant name = "easyMINE Token";
   string public constant symbol = "EMT";
   uint8 public constant decimals = 18;
 
