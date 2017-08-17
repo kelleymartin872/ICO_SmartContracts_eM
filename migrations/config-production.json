@@ -1,10 +1,13 @@
 {
   "ownerAddress":"0x7DC8b5997642aAe71755c653298810E798304900",
   "sysAddress":"0x7DC8b5997642aAe71755c653298810E798304900",
+  "reservationAddress":"",
   "preIcoAddress":"0x7DC8b5997642aAe71755c653298810E798304900",
   "walletAddress": "0x2Fca3B8B17475ABC8578358Af19f01F937049a4a",
   "bountyWalletAddress":"0x37B3fe7BE23bD83325dd1B6DA250817f7389693a",
   "emtWithdrawalAddress": "0x1CA21902Bb1012538B4E6feDD5b1484bbd7BF8EA",
+  "icoDuration":200000,
+  "startDelay":5000,
   "gasPrice": 25000000000,
   "gasLimit": 4000000
 }

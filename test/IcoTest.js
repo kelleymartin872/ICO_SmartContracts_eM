@@ -123,4 +123,3 @@ contract('ICO', accounts => {
   });
 
 });
-
