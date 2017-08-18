@@ -12,7 +12,7 @@ contract('ICO', accounts => {
   let icoBidder = accounts[2];
   let anotherIcoBidder = accounts[3];
 
-  let startBlock = web3.eth.blockNumber + 5100;
+  let startBlock = web3.eth.blockNumber + config.minStartDelay+5;
 
   it('not allow to bid', () => {
     return EasyMineIco.deployed().then(easyMineIco => {
@@ -92,6 +92,7 @@ contract('ICO', accounts => {
         })
         .then(token => token.balanceOf(icoBidder))
         .then(tokenBalance => {
+          console.log(tokenBalance.toString());
           assert.equal(bigInt(tokenBalance.toString()).equals(bigInt("25375000e18")), true);
           assert.equal(bigInt(web3.eth.getBalance(config.walletAddress).toString()).equals(bigInt("20000e18")), true);
         });
