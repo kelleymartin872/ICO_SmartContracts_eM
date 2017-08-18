@@ -9,7 +9,7 @@ contract('ICO', accounts => {
 
   let owner = accounts[0];
   let sys = accounts[1];
-  let icoBidder = accounts[2];
+  let icoBidder = accounts[7];
   let anotherIcoBidder = accounts[3];
 
   let startBlock = web3.eth.blockNumber + config.minStartDelay+5;
@@ -84,41 +84,43 @@ contract('ICO', accounts => {
 
   it('ico bid can be made', () => {
     return EasyMineIco.deployed().then(easyMineIco => {
+      var initialEMBalance = bigInt(web3.eth.getBalance(config.walletAddress).toString());
       return easyMineIco.sendTransaction({from: icoBidder, value: web3.toWei("20000", "ether"), gas: 2000000})
         .then(_ => easyMineIco.totalTokensSold())
         .then(totalTokensSold => {
-          assert.equal(bigInt(totalTokensSold.toString()).equals(bigInt("25375000e18")), true);
+          assert.equal(bigInt(totalTokensSold.toString()).toString(),bigInt("25375000e18").toString(), "Wrong total sold");
           return EasyMineToken.deployed();
         })
         .then(token => token.balanceOf(icoBidder))
         .then(tokenBalance => {
-          console.log(tokenBalance.toString());
-          assert.equal(bigInt(tokenBalance.toString()).equals(bigInt("25375000e18")), true);
-          assert.equal(bigInt(web3.eth.getBalance(config.walletAddress).toString()).equals(bigInt("20000e18")), true);
+          assert.equal(bigInt(tokenBalance.toString()).toString(),bigInt("25375000e18").toString(), "Wrong amount EMT for icoBidder");
+          var currentEMBalance = bigInt(web3.eth.getBalance(config.walletAddress).toString());
+          assert.equal(currentEMBalance.toString(), bigInt("20000e18").add(initialEMBalance).toString(), "Wrong amount of ETH");
         });
     });
   });
 
   it('ico is finished and change returned', () => {
     return EasyMineIco.deployed().then(easyMineIco => {
-      var initialBalance = web3.eth.getBalance(anotherIcoBidder);
+      var initialBalance = web3.eth.getBalance(anotherIcoBidder).toString();
+      var initialEMBalance = web3.eth.getBalance(config.walletAddress).toString();
       return easyMineIco.sendTransaction({from: anotherIcoBidder, value: web3.toWei("20000", "ether"), gas: 2000000, gasPrice: 0})
         .then(_ => easyMineIco.totalTokensSold())
         .then(totalTokensSold => {
-          assert.equal(bigInt(totalTokensSold.toString()).equals(bigInt("27000000e18")), true);
+          assert.equal(bigInt(totalTokensSold.toString()).toString(),bigInt("27000000e18").toString(), "ICO Tokens sold when shouldn't");
           return easyMineIco.stage();
         })
         .then(stage => {
           assert.equal(stage, 4);
-          var currentBalance = web3.eth.getBalance(anotherIcoBidder);
-          var balanceDiff = bigInt(initialBalance.toString()).minus(bigInt(currentBalance.toString()));
-          assert.equal(balanceDiff.equals(bigInt("1300e18")), true);
+          var currentBalance = web3.eth.getBalance(anotherIcoBidder).toString();
+          assert.equal(initialBalance, currentBalance, "ETH wasn't returned");
           return EasyMineToken.deployed();
         })
         .then(token => token.balanceOf(anotherIcoBidder))
         .then(tokenBalance => {
           assert.equal(bigInt(tokenBalance.toString()).equals(bigInt("1625000e18")), true);
-          assert.equal(bigInt(web3.eth.getBalance(config.walletAddress).toString()).equals(bigInt("21300e18")), true);
+          var currentEMBalance = web3.eth.getBalance(config.walletAddress).toString();
+          assert.equal(initialEMBalance, currentEMBalance, "Wrong ETH balanace on EM account");
         });
     });
   });
