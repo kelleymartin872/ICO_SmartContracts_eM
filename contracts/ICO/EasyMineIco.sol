@@ -14,13 +14,19 @@ contract EasyMineIco {
   }
 
   /* Maximum duration of ICO */
-  uint256 constant public MAX_DURATION_BLOCKS = 200000;
+  uint256 public maxDuration;
+
+  /* Minimum start delay in blocks */
+  uint256 public minStartDelay;
 
   /* The owner of this contract */
   address public owner;
 
   /* The sys address that handles token reservation */
   address public sys;
+
+  /* The reservation address - where reserved tokens will be send */
+  address public reservationAddress;
 
   /* The easyMINE wallet address */
   address public wallet;
@@ -30,6 +36,9 @@ contract EasyMineIco {
 
   /* ICO start block */
   uint256 public startBlock;
+
+  /* ICO end block */
+  uint256 public endBlock;
 
   /* The three price thresholds */
   PriceThreshold[3] public priceThresholds;
@@ -69,7 +78,7 @@ contract EasyMineIco {
     if (stage == Stages.StartScheduled && block.number >= startBlock) {
       stage = Stages.Started;
     }
-    if (stage == Stages.Started && block.number >= startBlock + MAX_DURATION_BLOCKS) {
+    if (stage == Stages.Started && block.number >= endBlock) {
       finalize();
     }
     _;
@@ -96,13 +105,16 @@ contract EasyMineIco {
     }
   }
 
-  function setup(address _easyMineToken, address _sys)
+  function setup(address _easyMineToken, address _sys, address _reservationAddress, uint256 _minStartDelay, uint256 _maxDuration)
     public
     isOwner
     atStage(Stages.Deployed)
   {
     require(_easyMineToken != 0x0);
     require(_sys != 0x0);
+    require(_reservationAddress != 0x0);
+    require(_minStartDelay > 0);
+    require(_maxDuration > 0);
 
     priceThresholds[0] = PriceThreshold(2000000  * 10**18, 0.00070 * 10**18, 0);
     priceThresholds[1] = PriceThreshold(2000000  * 10**18, 0.00075 * 10**18, 0);
@@ -110,6 +122,9 @@ contract EasyMineIco {
 
     easyMineToken = EasyMineToken(_easyMineToken);
     sys = _sys;
+    reservationAddress = _reservationAddress;
+    minStartDelay = _minStartDelay;
+    maxDuration = _maxDuration;
 
     // Validate token balance
     assert(easyMineToken.balanceOf(this) == maxTokensSold());
@@ -146,9 +161,10 @@ contract EasyMineIco {
     atStage(Stages.SetUp)
   {
     // Start allowed minimum 5000 blocks from now
-    require(_startBlock > block.number + 5000);
+    require(_startBlock > block.number + minStartDelay);
 
     startBlock = _startBlock;
+    endBlock = startBlock + maxDuration;
     stage = Stages.StartScheduled;
   }
 
@@ -228,7 +244,7 @@ contract EasyMineIco {
 
     uint256 tokensReserved = tokenCount - tokensRemaining;
 
-    assert(easyMineToken.transfer(sys, tokensReserved));
+    assert(easyMineToken.transfer(reservationAddress, tokensReserved));
 
     if (totalTokensSold() == maxTokensSold()) {
       finalize();

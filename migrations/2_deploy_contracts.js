@@ -2,7 +2,7 @@ var EasyMineTokenWallet = artifacts.require("./EasyMineTokenWallet.sol");
 var EasyMineIco = artifacts.require("./EasyMineIco.sol");
 var EasyMineToken = artifacts.require("./EasyMineToken.sol");
 
-var config = require("./config-test.json");
+var config = require("./config.json");
 
 console.log("Configuration:", config);
 
@@ -14,7 +14,7 @@ module.exports = function(deployer) {
   }).then(function() {
     return EasyMineIco.deployed();
   }).then(function(icoInstance) {
-    return icoInstance.setup(EasyMineToken.address, config.sysAddress, {from: config.ownerAddress, gasPrice: config.gasPrice, gas: config.gasLimit});
+    return icoInstance.setup(EasyMineToken.address, config.sysAddress, config.reservationAddress, config.minStartDelay, config.maxDuration, {from: config.ownerAddress, gasPrice: config.gasPrice, gas: config.gasLimit});
   }).then(function(result) {
     console.log("ICO contract set up in tx: " + result.tx);
     return EasyMineTokenWallet.deployed();
