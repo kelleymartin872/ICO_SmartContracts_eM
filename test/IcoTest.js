@@ -10,7 +10,7 @@ contract('ICO', accounts => {
   let owner = accounts[0];
   let sys = accounts[1];
   let icoBidder = accounts[7];
-  let anotherIcoBidder = accounts[6];
+  let anotherIcoBidder = accounts[8];
 
   let startBlock = web3.eth.blockNumber + config.minStartDelay+5;
 
