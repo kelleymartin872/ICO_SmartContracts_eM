@@ -195,11 +195,12 @@ contract EasyMineIco {
       uint256 tokens;
       if (maxTokensByAmount > tokensAvailable) {
         tokens = tokensAvailable;
+        amountRemaining -= (priceThresholds[i].price * tokens) / 10**18;
       } else {
         tokens = maxTokensByAmount;
+        amountRemaining = 0;
       }
       priceThresholds[i].tokensSold += tokens;
-      amountRemaining -= (priceThresholds[i].price * tokens) / 10**18;
       tokensToReceive += tokens;
     }
 
