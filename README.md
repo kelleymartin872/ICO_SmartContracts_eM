@@ -9,7 +9,7 @@ Compiling and deploying locally
 ------------------------------
 
 ```bash
-npm install big-integer sync-request
+npm install bignumber.js sync-request
 truffle compile
 truffle migrate --network development
 ```

@@ -1,7 +1,7 @@
 var EasyMineToken = artifacts.require("./EasyMineToken.sol");
 var EasyMineTokenWallet = artifacts.require("./EasyMineTokenWallet.sol");
 
-var bigInt = require("big-integer");
+var BigNumber = require("bignumber.js");
 var rpcUtils = require('./TestrpcUtils.js');
 
 contract('EasyMineTokenWallet', accounts => {
@@ -11,7 +11,7 @@ contract('EasyMineTokenWallet', accounts => {
       return EasyMineTokenWallet.deployed().then(tokenWallet => {
         return easyMineToken.balanceOf(tokenWallet.address)
           .then(balance => {
-            assert.equal(bigInt(balance.toString()).equals(bigInt("3000000e18")), true);
+            assert.isTrue(balance.equals(new BigNumber("3000000e18")));
             return tokenWallet.owner();
           })
           .then(owner => easyMineToken.balanceOf(owner))
@@ -36,18 +36,18 @@ contract('EasyMineTokenWallet', accounts => {
     rpcUtils.increaseTimeDays(3);
     rpcUtils.mineBlock();
     return EasyMineTokenWallet.deployed().then(tokenWallet => tokenWallet.maxPossibleWithdrawal())
-      .then(maxWithdrawal => assert.equal(bigInt(maxWithdrawal.toString()).equals(bigInt("30000e18")), true));
+      .then(maxWithdrawal => assert.isTrue(maxWithdrawal.equals(new BigNumber("30000e18"))));
   });
 
   it('withdrawal is possible', () => {
     return EasyMineToken.deployed().then(easyMineToken => {
       return EasyMineTokenWallet.deployed().then(tokenWallet => {
-        return tokenWallet.withdraw(bigInt("29000e18").toString())
+        return tokenWallet.withdraw(new BigNumber("29000e18"))
           .then(_ => tokenWallet.withdrawalAddress())
           .then(withdrawalAddress => easyMineToken.balanceOf(withdrawalAddress))
-          .then(bal => assert.equal(bigInt(bal.toString()).equals(bigInt("29000e18")), true))
+          .then(bal => assert.isTrue(bal.equals(new BigNumber("29000e18"))))
           .then(_ => tokenWallet.maxPossibleWithdrawal())
-          .then(maxWithdrawal => assert.equal(bigInt(maxWithdrawal.toString()).equals(bigInt("1000e18")), true));
+          .then(maxWithdrawal => assert.isTrue(maxWithdrawal.equals(new BigNumber("1000e18"))));
       });
     });
   });
@@ -56,7 +56,7 @@ contract('EasyMineTokenWallet', accounts => {
     rpcUtils.increaseTimeDays(1);
     rpcUtils.mineBlock();
     return EasyMineTokenWallet.deployed().then(tokenWallet => tokenWallet.maxPossibleWithdrawal())
-      .then(maxWithdrawal => assert.equal(bigInt(maxWithdrawal.toString()).equals(bigInt("16000e18")), true));
+      .then(maxWithdrawal => assert.isTrue(maxWithdrawal.equals(new BigNumber("16000e18"))));
   });
 
 });

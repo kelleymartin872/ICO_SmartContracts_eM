@@ -1,7 +1,7 @@
 var EasyMineToken = artifacts.require("./EasyMineToken.sol");
 var EasyMineIco = artifacts.require("./EasyMineIco.sol");
 
-var bigInt = require("big-integer");
+var BigNumber = require("bignumber.js");
 var rpcUtils = require('./TestrpcUtils.js');
 var config = require('../migrations/config-test.json');
 
@@ -85,12 +85,12 @@ contract('ICO', accounts => {
 
   it('first ico bid can be made', () => {
     return EasyMineIco.deployed().then(easyMineIco => {
-      const expectedTokenCount = bigInt("14285714285714285714285");
-      var initialEMBalance = bigInt(web3.eth.getBalance(config.walletAddress).toString());
+      const expectedTokenCount = new BigNumber("14285714285714285714285");
+      var initialEMBalance = web3.eth.getBalance(config.walletAddress);
       return easyMineIco.sendTransaction({from: icoBidder, value: web3.toWei("10", "ether"), gas: 2000000})
         .then(_ => easyMineIco.priceThresholds(0))
         .then(firstThreshold => {
-          assert.equal(bigInt(firstThreshold[2].toString()).toString(), expectedTokenCount.toString());
+          assert.isTrue(firstThreshold[2].equals(expectedTokenCount));
           return easyMineIco.priceThresholds(1);
         })
         .then(secondThreshold => {
@@ -102,32 +102,32 @@ contract('ICO', accounts => {
           return easyMineIco.totalTokensSold();
         })
         .then(totalTokensSold => {
-          assert.equal(bigInt(totalTokensSold.toString()).toString(), expectedTokenCount.toString());
+          assert.isTrue(totalTokensSold.equals(expectedTokenCount));
           return EasyMineToken.deployed();
         })
         .then(token => token.balanceOf(icoBidder))
         .then(tokenBalance => {
-          assert.equal(bigInt(tokenBalance.toString()).toString(), expectedTokenCount.toString(), "Wrong amount EMT for icoBidder");
-          var currentEMBalance = bigInt(web3.eth.getBalance(config.walletAddress).toString());
-          assert.equal(currentEMBalance.toString(), bigInt("10e18").add(initialEMBalance).toString(), "Wrong amount of ETH");
+          assert.isTrue(tokenBalance.equals(expectedTokenCount), "Wrong amount EMT for icoBidder");
+          var currentEMBalance = web3.eth.getBalance(config.walletAddress);
+          assert.isTrue(currentEMBalance.equals(new BigNumber("10e18").add(initialEMBalance)), "Wrong amount of ETH");
         });
     });
   });
 
   it('second ico bid can be made', () => {
     return EasyMineIco.deployed().then(easyMineIco => {
-      var initialEMBalance = bigInt(web3.eth.getBalance(config.walletAddress).toString());
+      var initialEMBalance = web3.eth.getBalance(config.walletAddress);
       return easyMineIco.sendTransaction({from: anotherIcoBidder, value: web3.toWei("20000", "ether"), gas: 2000000})
         .then(_ => easyMineIco.totalTokensSold())
         .then(totalTokensSold => {
-          assert.equal(bigInt(totalTokensSold.toString()).toString(), bigInt("25387500e18").toString(), "Wrong total sold");
+          assert.isTrue(totalTokensSold.equals(new BigNumber("25387500e18")), "Wrong total sold");
           return EasyMineToken.deployed();
         })
         .then(token => token.balanceOf(anotherIcoBidder))
         .then(tokenBalance => {
-          assert.equal(bigInt(tokenBalance.toString()).toString(), bigInt("25373214285714285714285715").toString(), "Wrong amount EMT for anotherIcoBidder");
-          var currentEMBalance = bigInt(web3.eth.getBalance(config.walletAddress).toString());
-          assert.equal(currentEMBalance.toString(), bigInt("20000e18").add(initialEMBalance).toString(), "Wrong amount of ETH");
+          assert.isTrue(tokenBalance.equals(new BigNumber("25373214285714285714285715")), "Wrong amount EMT for anotherIcoBidder");
+          var currentEMBalance = web3.eth.getBalance(config.walletAddress);
+          assert.isTrue(currentEMBalance.equals(new BigNumber("20000e18").add(initialEMBalance)), "Wrong amount of ETH");
         });
     });
   });
@@ -135,24 +135,24 @@ contract('ICO', accounts => {
   it('ico is finished and change returned', () => {
     return EasyMineIco.deployed().then(easyMineIco => {
       var initialBalance = web3.eth.getBalance(anotherIcoBidder);
-      var initialEMBalance = web3.eth.getBalance(config.walletAddress).toString();
+      var initialEMBalance = web3.eth.getBalance(config.walletAddress);
       return easyMineIco.sendTransaction({from: anotherIcoBidder, value: web3.toWei("20000", "ether"), gas: 2000000, gasPrice: 0})
         .then(_ => easyMineIco.totalTokensSold())
         .then(totalTokensSold => {
-          assert.equal(bigInt(totalTokensSold.toString()).toString(),bigInt("27000000e18").toString(), "ICO Tokens sold when shouldn't");
+          assert.isTrue(totalTokensSold.equals(new BigNumber("27000000e18")), "ICO Tokens sold when shouldn't");
           return easyMineIco.stage();
         })
         .then(stage => {
           assert.equal(stage, 4);
-          var currentBalance = web3.eth.getBalance(anotherIcoBidder).toString();
-          assert.equal(currentBalance, initialBalance.minus(bigInt("1290e18")).toString(), "ETH wasn't returned");
+          var currentBalance = web3.eth.getBalance(anotherIcoBidder);
+          assert.isTrue(currentBalance.equals(initialBalance.minus(new BigNumber("1290e18"))), "ETH wasn't returned");
           return EasyMineToken.deployed();
         })
         .then(token => token.balanceOf(anotherIcoBidder))
         .then(tokenBalance => {
-          assert.equal(bigInt(tokenBalance.toString()).toString(), bigInt("26985714285714285714285715").toString(), "Wrong amount EMT for anotherIcoBidder");
-          var currentEMBalance = bigInt(web3.eth.getBalance(config.walletAddress).toString());
-          assert.equal(currentEMBalance.toString(), bigInt("1290e18").add(initialEMBalance).toString(), "Wrong amount of ETH");
+          assert.isTrue(tokenBalance.equals(new BigNumber("26985714285714285714285715")), "Wrong amount EMT for anotherIcoBidder");
+          var currentEMBalance = web3.eth.getBalance(config.walletAddress);
+          assert.isTrue(currentEMBalance.equals(new BigNumber("1290e18").add(initialEMBalance)), "Wrong amount of ETH");
         });
     });
   });
