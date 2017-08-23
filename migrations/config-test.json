@@ -5,7 +5,7 @@
   "walletAddress": "0x22d491Bde2303f2f43325b2108D26f1eAbA1e32b",
   "bountyWalletAddress":"0x28a8746e75304c0780E011BEd21C72cD78cd535E",
   "emtWithdrawalAddress": "0x4F6594a1aCdc6B9C6B5ab107843Baa8cdE233844",
-  "reservationAddress":"0x28a8746e75304c0780E011BEd21C72cD78cd535E",
+  "reservationAddress":"0x720b07dd40c7572c8ae07bfbead1516f669165b6",
   "maxDuration":200,
   "minStartDelay":1,
   "gasPrice": 25000000000,

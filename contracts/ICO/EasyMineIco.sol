@@ -6,6 +6,7 @@ contract EasyMineIco {
 
   event TokensSold(address indexed buyer, uint256 amount);
   event TokensReserved(uint256 amount);
+  event IcoFinished(uint256 burned);
 
   struct PriceThreshold {
     uint256 tokenCount;
@@ -272,6 +273,7 @@ contract EasyMineIco {
     // burn unsold tokens
     uint256 balance = easyMineToken.balanceOf(this);
     easyMineToken.burn(balance);
+    IcoFinished(balance);
   }
 
 }
