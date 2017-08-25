@@ -25,21 +25,27 @@ contract IcoProxy {
   function()
     public
     payable {
-    uint256 initialBalance = this.balance;
-    uint256 initialTokenBalance = easyMineToken.balanceOf(this);
+    if (msg.sender != icoAddress) {
+      require(msg.value > 0);
 
-    assert(icoAddress.send(msg.value));
+      uint256 initialBalance = this.balance;
+      uint256 initialTokenBalance = easyMineToken.balanceOf(this);
 
-    uint256 change = this.balance - initialBalance;
-    if (change != 0) {
-      assert(msg.sender.send(change));
+      assert(icoAddress.send(msg.value));
+
+      uint256 change = 0;
+      if (this.balance > initialBalance) {
+        change = this.balance - initialBalance;
+        assert(msg.sender.send(change));
+      }
+      totalContributed += msg.value - change;
+
+      uint256 newTokenBalance = easyMineToken.balanceOf(this);
+      uint256 tokensBought = newTokenBalance - initialTokenBalance;
+      if (tokensBought > 0) {
+        assert(easyMineToken.transfer(msg.sender, tokensBought));
+      }
     }
-
-    totalContributed += msg.value - change;
-
-    uint256 newTokenBalance = easyMineToken.balanceOf(this);
-    uint256 tokensBought = newTokenBalance - initialTokenBalance;
-    assert(easyMineToken.transfer(msg.sender, tokensBought));
   }
 
   function withdrawAll()
