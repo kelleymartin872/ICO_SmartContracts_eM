@@ -31,7 +31,7 @@ contract IcoProxy {
       uint256 initialBalance = this.balance;
       uint256 initialTokenBalance = easyMineToken.balanceOf(this);
 
-      assert(icoAddress.send(msg.value));
+      assert(icoAddress.call.value(msg.value)());
 
       uint256 change = 0;
       if (this.balance > initialBalance) {

@@ -51,7 +51,7 @@ contract('ICO Proxy', accounts => {
               assert.isTrue(currentEMBalance.equals(new BigNumber("10e18").add(initialEMBalance)), "Wrong amount of ETH");
               return proxy.totalContributed();
             })
-            .then(totalContributed => { console.log("total: " + totalContributed.toString()); assert.isTrue(totalContributed.equals(new BigNumber("10e18"))) });
+            .then(totalContributed => assert.isTrue(totalContributed.equals(new BigNumber("10e18"))));
         });
       });
     });
