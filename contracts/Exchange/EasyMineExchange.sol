@@ -45,7 +45,7 @@ contract EasyMineExchange {
     payable {
     require(msg.value > 0);
 
-    uint256 tokensToReceive = msg.value * exchangeRate;
+    uint256 tokensToReceive = (msg.value * 10**18) / exchangeRate;
     if (easyMineToken.balanceOf(this) >= tokensToReceive) {
       // if the exchange has sufficient EMT tokens, finalize the transactoins
       assert(easyMineToken.transfer(msg.sender, tokensToReceive));

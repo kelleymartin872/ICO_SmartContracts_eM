@@ -41,13 +41,16 @@ contract('Exchange', accounts => {
     let initialWalletBalance = web3.eth.getBalance(walletAddr);
     return EasyMineToken.deployed().then(easyMineToken => {
       return EasyMineExchange.deployed().then(easyMineExchange => {
-        return easyMineExchange.exchange({from: user1, value: web3.toWei("123", "ether")})
+        return easyMineExchange.setExchangeRate(web3.toWei("0.0008", "ether"), {from: config.ownerAddress}) // setting exchange rate to 0.0008
+          .then(_ => {
+            easyMineExchange.exchange({from: user1, value: web3.toWei("0.0024", "ether")}) // sending 0.0024 ETH
+          })
           .then(_ => {
             return easyMineToken.balanceOf(user1);
           }).then(user1Balance => {
-            assert.equal(user1Balance, web3.toWei("123", "ether"));
+            assert.equal(user1Balance, web3.toWei("3", "ether")); // user should receive 3 EMT
             let endWalletBalance = web3.eth.getBalance(walletAddr);
-            assert.equal(endWalletBalance.toString(), initialWalletBalance.plus(web3.toWei("123", "ether")).toString());
+            assert.equal(endWalletBalance.toString(), initialWalletBalance.plus(web3.toWei("0.0024", "ether")).toString());
           });
       });
     });
